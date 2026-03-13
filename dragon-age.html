@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragon Age Hub — Aladdin Vicuna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a08;
+    --bg2: #111110;
+    --gold: #c8a96e;
+    --gold-dim: #8a7248;
+    --orange: #e05c3a;
+    --text: #d4cfc4;
+    --text-dim: #7a7568;
+    --border: rgba(200,169,110,0.15);
+    --white: #f0ece4;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Playfair Display', Georgia, serif;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 24px 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(10,10,8,0.92) 0%, transparent 100%);
+  }
+  .nav-back {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-decoration: none;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: color 0.2s;
+  }
+  .nav-back::before { content: '←'; font-size: 14px; }
+  .nav-back:hover { color: var(--white); }
+  .nav-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    height: 100vh;
+    min-height: 600px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background-image: url('images/7_DAI___4_.png');
+    background-size: cover;
+    background-position: center 30%;
+    filter: brightness(0.4) saturate(0.65);
+    transform: scale(1.04);
+    transition: transform 10s ease;
+  }
+  .hero:hover .hero-bg { transform: scale(1.0); }
+  .hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, var(--bg) 0%, rgba(10,10,8,0.45) 55%, transparent 100%);
+  }
+  .hero-content {
+    position: relative; z-index: 2;
+    padding: 0 80px 80px;
+    max-width: 900px;
+  }
+  .hero-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.2em;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(60px, 10vw, 120px);
+    line-height: 0.9; color: var(--white);
+    letter-spacing: 0.02em; margin-bottom: 24px;
+  }
+  .hero-title span { color: var(--gold); }
+  .hero-sub {
+    font-size: 17px; font-style: italic;
+    color: var(--text); line-height: 1.7;
+    max-width: 540px; margin-bottom: 40px;
+  }
+  .hero-meta {
+    display: flex; gap: 40px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text-dim);
+    letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  .hero-meta span { color: var(--gold); }
+
+  /* SECTIONS */
+  .section {
+    padding: 100px 80px;
+    border-top: 1px solid var(--border);
+    opacity: 0; transform: translateY(36px);
+    transition: opacity 0.75s ease, transform 0.75s ease;
+  }
+  .section.visible { opacity: 1; transform: translateY(0); }
+
+  .section-header {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 0 40px;
+    align-items: start;
+    margin-bottom: 56px;
+  }
+  .section-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px; color: rgba(200,169,110,0.1);
+    line-height: 1; letter-spacing: 0.02em;
+  }
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.25em;
+    color: var(--gold-dim); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(32px, 5vw, 56px);
+    color: var(--white); letter-spacing: 0.03em;
+    line-height: 1; margin-bottom: 20px;
+  }
+  .section-text {
+    font-size: 16px; line-height: 1.85;
+    color: var(--text); max-width: 680px;
+    font-style: italic;
+  }
+
+  /* SLIDESHOW */
+  .slideshow {
+    position: relative; width: 100%;
+    aspect-ratio: 16/9;
+    background: #080807;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .slide {
+    position: absolute; inset: 0;
+    opacity: 0; transition: opacity 0.55s ease;
+  }
+  .slide.active { opacity: 1; }
+  .slide img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+  }
+  .slideshow-controls {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 18px 22px;
+    display: flex; align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to top, rgba(10,10,8,0.88) 0%, transparent 100%);
+    z-index: 5;
+  }
+  .slide-dots { display: flex; gap: 8px; }
+  .slide-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-dim); cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    border: none; padding: 0;
+  }
+  .slide-dot.active { background: var(--gold); transform: scale(1.4); }
+  .slide-arrows { display: flex; gap: 10px; }
+  .slide-arrow {
+    width: 34px; height: 34px;
+    background: rgba(200,169,110,0.08);
+    border: 1px solid var(--border);
+    color: var(--gold); font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .slide-arrow:hover { background: rgba(200,169,110,0.2); }
+  .slide-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  /* TOOLS GRID */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  .tool-item { background: var(--bg2); padding: 32px 28px; }
+  .tool-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; color: var(--gold);
+    letter-spacing: 0.05em; margin-bottom: 8px;
+  }
+  .tool-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text-dim);
+    line-height: 1.6; letter-spacing: 0.05em;
+  }
+
+  /* TAKEAWAYS */
+  .takeaways {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  .takeaway { background: var(--bg2); padding: 40px 32px; }
+  .takeaway::before {
+    content: '';
+    display: block; width: 32px; height: 2px;
+    background: var(--gold); margin-bottom: 20px;
+  }
+  .takeaway p {
+    font-size: 15px; line-height: 1.75;
+    color: var(--text); font-style: italic;
+  }
+
+  /* CONTINUATION LABEL */
+  .continuation-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.25em;
+    color: var(--gold-dim); text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 60px 80px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between;
+    align-items: center;
+  }
+  .f-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; color: var(--gold);
+    letter-spacing: 0.08em;
+  }
+  .f-nav { display: flex; gap: 32px; }
+  .f-nav a {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text-dim);
+    text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; transition: color 0.2s;
+  }
+  .f-nav a:hover { color: var(--gold); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    nav, .hero-content, .section, footer { padding-left: 32px; padding-right: 32px; }
+    .section-header { grid-template-columns: 1fr; }
+    .section-num { display: none; }
+    .takeaways { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    nav, .hero-content, .section, footer { padding-left: 20px; padding-right: 20px; }
+    .hero-meta { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-back">Portfolio</a>
+  <div class="nav-title">Dragon Age Hub</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-tag">Case Study — Level Design</div>
+    <h1 class="hero-title">Dragon<br><span>Age</span><br>Hub</h1>
+    <p class="hero-sub">An onboarding hub level designed for a theoretical RPG inspired by Dragon Age: Inquisition — built in Unreal Engine.</p>
+    <div class="hero-meta">
+      <div>Engine <span>Unreal Engine</span></div>
+      <div>Type <span>Hub / Onboarding</span></div>
+      <div>Genre <span>RPG</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 01 OVERVIEW -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">01</div>
+    <div class="section-info">
+      <div class="section-label">Overview</div>
+      <h2 class="section-title">Project Overview</h2>
+      <p class="section-text">This hub-level was designed as an onboarding space for a theoretical RPG, inspired by Dragon Age: Inquisition. The goal was to introduce core mechanics, encourage exploration, and provide branching paths while reinforcing environmental storytelling and player choice.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 02 CONCEPT & SKETCH -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">02</div>
+    <div class="section-info">
+      <div class="section-label">Design</div>
+      <h2 class="section-title">Concept &amp; Sketch</h2>
+      <p class="section-text">The initial stage focused on establishing the player's journey through the hub. I sketched the layout to define primary routes, points of interest, and visual landmarks that guide movement without relying on explicit markers.</p>
+    </div>
+  </div>
+  <div class="slideshow" id="sw1">
+    <div class="slide active"><img src="images/1_DAI_Sketch.png" alt="Initial hub sketch"></div>
+    <div class="slide"><img src="images/1_DAI_TopDownRoutes.png" alt="Top-down route map"></div>
+    <div class="slideshow-controls">
+      <div class="slide-dots">
+        <button class="slide-dot active" onclick="goTo('sw1',0)"></button>
+        <button class="slide-dot" onclick="goTo('sw1',1)"></button>
+      </div>
+      <div class="slide-counter" id="sw1-c">1 / 2</div>
+      <div class="slide-arrows">
+        <button class="slide-arrow" onclick="prev('sw1')">&#8592;</button>
+        <button class="slide-arrow" onclick="next('sw1')">&#8594;</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 BLOCKOUT / WHITEBOX -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">03</div>
+    <div class="section-info">
+      <div class="section-label">Blockout</div>
+      <h2 class="section-title">Blockout / Whitebox</h2>
+      <p class="section-text">I moved the sketch into Unreal to create a blockout using planes, terrain, and simple geometry. The focus was on spatial relationships, pacing, and player guidance via sightlines and landmark placement. Below we have the first iterations of the courtyard and exterior areas.</p>
+    </div>
+  </div>
+  <div class="slideshow" id="sw2">
+    <div class="slide active"><img src="images/2_DAI_InitialBlockout__1_.png" alt="Initial blockout aerial"></div>
+    <div class="slide"><img src="images/2_DAI_InitialBlockout__2_.png" alt="Initial blockout courtyard"></div>
+    <div class="slideshow-controls">
+      <div class="slide-dots">
+        <button class="slide-dot active" onclick="goTo('sw2',0)"></button>
+        <button class="slide-dot" onclick="goTo('sw2',1)"></button>
+      </div>
+      <div class="slide-counter" id="sw2-c">1 / 2</div>
+      <div class="slide-arrows">
+        <button class="slide-arrow" onclick="prev('sw2')">&#8592;</button>
+        <button class="slide-arrow" onclick="next('sw2')">&#8594;</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 BLOCKOUT CONTINUED -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">04</div>
+    <div class="section-info">
+      <div class="section-label">Blockout Continued</div>
+      <h2 class="section-title">Blockout Continued</h2>
+      <p class="section-text">With the major points of interest positioned, I began the first playable iteration of the hub. This stage focused on bringing the space to life while establishing clear player guidance, using leading lines, visual cues, and path placement to connect the courtyard to the farm and tents. These early adjustments emphasized flow, sightlines, and natural navigation, ensuring players could intuitively move through the space while noticing optional areas and points of interest. I also started introducing elevation to key areas to establish hierarchy and draw player attention, using height differences to make important spaces more visually prominent and to subtly guide player movement through the hub.</p>
+    </div>
+  </div>
+  <div class="slideshow" id="sw3">
+    <div class="slide active"><img src="images/3_DAI___1_.png" alt="Blockout iteration 1"></div>
+    <div class="slide"><img src="images/3_DAI___2_.png" alt="Blockout iteration 2"></div>
+    <div class="slide"><img src="images/3_DAI___3_.png" alt="Blockout iteration 3"></div>
+    <div class="slide"><img src="images/3_DAI___4_.png" alt="Blockout iteration 4"></div>
+    <div class="slideshow-controls">
+      <div class="slide-dots">
+        <button class="slide-dot active" onclick="goTo('sw3',0)"></button>
+        <button class="slide-dot" onclick="goTo('sw3',1)"></button>
+        <button class="slide-dot" onclick="goTo('sw3',2)"></button>
+        <button class="slide-dot" onclick="goTo('sw3',3)"></button>
+      </div>
+      <div class="slide-counter" id="sw3-c">1 / 4</div>
+      <div class="slide-arrows">
+        <button class="slide-arrow" onclick="prev('sw3')">&#8592;</button>
+        <button class="slide-arrow" onclick="next('sw3')">&#8594;</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 2px;">
+    <div class="slideshow" id="sw4">
+      <div class="slide active"><img src="images/4_DAI___1_.png" alt="Blockout continued 1"></div>
+      <div class="slide"><img src="images/4_DAI___2_.png" alt="Blockout continued 2"></div>
+      <div class="slide"><img src="images/4_DAI___3_.png" alt="Blockout continued 3"></div>
+      <div class="slide"><img src="images/4_DAI___4_.png" alt="Blockout continued 4"></div>
+      <div class="slideshow-controls">
+        <div class="slide-dots">
+          <button class="slide-dot active" onclick="goTo('sw4',0)"></button>
+          <button class="slide-dot" onclick="goTo('sw4',1)"></button>
+          <button class="slide-dot" onclick="goTo('sw4',2)"></button>
+          <button class="slide-dot" onclick="goTo('sw4',3)"></button>
+        </div>
+        <div class="slide-counter" id="sw4-c">1 / 4</div>
+        <div class="slide-arrows">
+          <button class="slide-arrow" onclick="prev('sw4')">&#8592;</button>
+          <button class="slide-arrow" onclick="next('sw4')">&#8594;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 ENVIRONMENTAL STORYTELLING -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">05</div>
+    <div class="section-info">
+      <div class="section-label">World Building</div>
+      <h2 class="section-title">Environmental Storytelling &amp; Interactive Elements</h2>
+      <p class="section-text">Environmental props and quest givers were strategically placed to guide player behavior and reinforce narrative context. Natural props such as bushes, rocks, and terrain features were used to shape player movement, improve spatial readability, and create clear navigation paths, while NPCs and interactable objects introduce objectives, resources, and story beats. This allows the environment itself to teach mechanics and encourage exploration without relying on explicit UI.</p>
+    </div>
+  </div>
+  <div class="slideshow" id="sw5">
+    <div class="slide active"><img src="images/5_DAI___1_.png" alt="Environmental props 1"></div>
+    <div class="slide"><img src="images/5_DAI___2_.png" alt="Environmental props 2"></div>
+    <div class="slide"><img src="images/5_DAI___3_.png" alt="Environmental props 3"></div>
+    <div class="slideshow-controls">
+      <div class="slide-dots">
+        <button class="slide-dot active" onclick="goTo('sw5',0)"></button>
+        <button class="slide-dot" onclick="goTo('sw5',1)"></button>
+        <button class="slide-dot" onclick="goTo('sw5',2)"></button>
+      </div>
+      <div class="slide-counter" id="sw5-c">1 / 3</div>
+      <div class="slide-arrows">
+        <button class="slide-arrow" onclick="prev('sw5')">&#8592;</button>
+        <button class="slide-arrow" onclick="next('sw5')">&#8594;</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 PLAYTESTING & ITERATION -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">06</div>
+    <div class="section-info">
+      <div class="section-label">Iteration</div>
+      <h2 class="section-title">Playtesting &amp; Iteration</h2>
+      <p class="section-text">Iterative playtesting informed adjustments to pacing, path clarity, and task visibility. Feedback helped ensure that both short-term objectives and long-term exploration goals were readable and engaging. I introduced large rock formations to act as movement and sightline blockers, helping simplify visual noise and improve spatial readability. Prop density was increased across key areas to make spaces feel more lived-in while subtly shaping player movement. An optional path branching to the right of the main courtyard gates was added to support exploration and lead to a side quest, reinforcing player choice. Peripheral props were placed to guide players forward without fully obstructing movement, maintaining flow while discouraging unintended routes. Finally, the main soldier tent was elevated and positioned within clear view from the farm area to improve landmark visibility and help players reorient themselves when exiting the farm.</p>
+    </div>
+  </div>
+  <div class="slideshow" id="sw6">
+    <div class="slide active"><img src="images/6_DAI___1_.png" alt="Playtesting iteration 1"></div>
+    <div class="slide"><img src="images/6_DAI___2_.png" alt="Playtesting iteration 2"></div>
+    <div class="slide"><img src="images/6_DAI___3_.png" alt="Playtesting iteration 3"></div>
+    <div class="slideshow-controls">
+      <div class="slide-dots">
+        <button class="slide-dot active" onclick="goTo('sw6',0)"></button>
+        <button class="slide-dot" onclick="goTo('sw6',1)"></button>
+        <button class="slide-dot" onclick="goTo('sw6',2)"></button>
+      </div>
+      <div class="slide-counter" id="sw6-c">1 / 3</div>
+      <div class="slide-arrows">
+        <button class="slide-arrow" onclick="prev('sw6')">&#8592;</button>
+        <button class="slide-arrow" onclick="next('sw6')">&#8594;</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 2px;">
+    <div class="slideshow" id="sw7">
+      <div class="slide active"><img src="images/7_DAI___1_.png" alt="Final iteration 1"></div>
+      <div class="slide"><img src="images/7_DAI___2_.png" alt="Final iteration 2"></div>
+      <div class="slide"><img src="images/7_DAI___3_.png" alt="Final iteration 3"></div>
+      <div class="slide"><img src="images/7_DAI___5_.png" alt="Final iteration 5"></div>
+      <div class="slide"><img src="images/7_DAI___6_.png" alt="Final iteration 6"></div>
+      <div class="slide"><img src="images/7_DAI___7_.png" alt="Final iteration 7"></div>
+      <div class="slide"><img src="images/7_DAI___8_.png" alt="Final iteration 8"></div>
+      <div class="slide"><img src="images/7_DAI___9_.png" alt="Final iteration 9"></div>
+      <div class="slideshow-controls">
+        <div class="slide-dots">
+          <button class="slide-dot active" onclick="goTo('sw7',0)"></button>
+          <button class="slide-dot" onclick="goTo('sw7',1)"></button>
+          <button class="slide-dot" onclick="goTo('sw7',2)"></button>
+          <button class="slide-dot" onclick="goTo('sw7',3)"></button>
+          <button class="slide-dot" onclick="goTo('sw7',4)"></button>
+          <button class="slide-dot" onclick="goTo('sw7',5)"></button>
+          <button class="slide-dot" onclick="goTo('sw7',6)"></button>
+          <button class="slide-dot" onclick="goTo('sw7',7)"></button>
+        </div>
+        <div class="slide-counter" id="sw7-c">1 / 8</div>
+        <div class="slide-arrows">
+          <button class="slide-arrow" onclick="prev('sw7')">&#8592;</button>
+          <button class="slide-arrow" onclick="next('sw7')">&#8594;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 TOOLS USED -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">07</div>
+    <div class="section-info">
+      <div class="section-label">Production</div>
+      <h2 class="section-title">Tools Used</h2>
+    </div>
+  </div>
+  <div class="tools-grid">
+    <div class="tool-item">
+      <div class="tool-name">Unreal Engine</div>
+      <div class="tool-desc">Blockout, lighting, navigation mesh</div>
+    </div>
+    <div class="tool-item">
+      <div class="tool-name">Paint &amp; Miro</div>
+      <div class="tool-desc">Initial sketching and concept layout</div>
+    </div>
+    <div class="tool-item">
+      <div class="tool-name">Miro</div>
+      <div class="tool-desc">Task flow and objectives mapping</div>
+    </div>
+    <div class="tool-item">
+      <div class="tool-name">Blueprints</div>
+      <div class="tool-desc">Interactive elements and triggers</div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 KEY TAKEAWAYS -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">08</div>
+    <div class="section-info">
+      <div class="section-label">Reflection</div>
+      <h2 class="section-title">Key Takeaways</h2>
+    </div>
+  </div>
+  <div class="takeaways">
+    <div class="takeaway">
+      <p>Clear sightlines guide players intuitively without overt handholding.</p>
+    </div>
+    <div class="takeaway">
+      <p>Branching paths and optional objectives encourage exploration and strategic choice.</p>
+    </div>
+    <div class="takeaway">
+      <p>Iterative testing refined pacing and ensured clarity for both short-term and long-term goals.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="f-name">Aladdin Vicuna</div>
+  <div class="f-nav">
+    <a href="index.html">Portfolio</a>
+    <a href="index.html#about">About</a>
+    <a href="index.html#contact">Contact</a>
+  </div>
+</footer>
+
+<script>
+  // Slideshow engine
+  const st = {};
+
+  function slides(id) { return document.getElementById(id).querySelectorAll('.slide'); }
+  function dots(id)   { return document.getElementById(id).querySelectorAll('.slide-dot'); }
+
+  function goTo(id, idx) {
+    if (!st[id]) st[id] = 0;
+    const sl = slides(id), dt = dots(id);
+    const counter = document.getElementById(id + '-c');
+    sl[st[id]].classList.remove('active');
+    dt[st[id]].classList.remove('active');
+    st[id] = ((idx % sl.length) + sl.length) % sl.length;
+    sl[st[id]].classList.add('active');
+    dt[st[id]].classList.add('active');
+    if (counter) counter.textContent = (st[id] + 1) + ' / ' + sl.length;
+  }
+
+  function next(id) { if (!st[id]) st[id] = 0; goTo(id, st[id] + 1); }
+  function prev(id) { if (!st[id]) st[id] = 0; goTo(id, st[id] - 1); }
+
+  // Auto-advance with staggered timing
+  ['sw1','sw2','sw3','sw4','sw5','sw6','sw7'].forEach((id, i) => {
+    st[id] = 0;
+    setInterval(() => next(id), 4500 + i * 600);
+  });
+
+  // Scroll reveal
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.section').forEach(s => io.observe(s));
+</script>
+</body>
+</html>
