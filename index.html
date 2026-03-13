@@ -1,1 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aladdin Vicuna — Game Level Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a08;
+    --surface: #111110;
+    --border: #2a2a26;
+    --accent: #c8a96e;
+    --accent2: #e05c3a;
+    --text: #e8e4dc;
+    --muted: #6b6860;
+    --tag: #1e1e1b;
+  }
 
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 4rem 5vw 5rem;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-bg {
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 60% at 70% 40%, rgba(200,169,110,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(224,92,58,0.04) 0%, transparent 50%),
+      linear-gradient(180deg, #0a0a08 0%, #0d0d0b 100%);
+  }
+
+  .header-grid {
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(200,169,110,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,169,110,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 70% 70% at 80% 30%, black 0%, transparent 70%);
+  }
+
+  .header-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(5rem, 14vw, 13rem);
+    line-height: 0.9;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    opacity: 0;
+    animation: fadeUp 0.8s 0.4s forwards;
+    position: relative;
+    z-index: 1;
+  }
+
+  h1 span {
+    color: var(--accent);
+    display: block;
+  }
+
+  .header-sub {
+    display: flex;
+    gap: 3rem;
+    margin-top: 2.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.6s forwards;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .header-desc {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--muted);
+    max-width: 400px;
+    line-height: 1.8;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 2.5rem;
+    flex-shrink: 0;
+  }
+
+  .stat {
+    text-align: right;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    color: var(--accent);
+    line-height: 1;
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* SCROLL INDICATOR */
+  .scroll-cue {
+    position: absolute;
+    right: 5vw;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeIn 1s 1.2s forwards;
+  }
+
+  .scroll-cue span {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 80px;
+    background: linear-gradient(var(--accent), transparent);
+    animation: scrollPulse 2s ease-in-out infinite 1.5s;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,8,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 5vw;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .nav-logo em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    position: relative;
+  }
+
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--accent);
+    transition: width 0.3s;
+  }
+
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a:hover::after { width: 100%; }
+
+  /* SECTION */
+  section {
+    padding: 7rem 5vw;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+
+  .section-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+  }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    letter-spacing: 0.02em;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .section-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* PROJECT GRID */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .project-card {
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16/10;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .project-card:hover .card-img {
+    transform: scale(1.06);
+    filter: brightness(0.5);
+  }
+
+  .project-card:hover .card-overlay {
+    opacity: 1;
+  }
+
+  .project-card:hover .card-info {
+    transform: translateY(0);
+  }
+
+  .card-img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.35);
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.4s;
+  }
+
+  .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(10,10,8,0.95) 0%, rgba(10,10,8,0.2) 60%, transparent 100%);
+    opacity: 0.8;
+    transition: opacity 0.3s;
+  }
+
+  .card-info {
+    position: relative;
+    z-index: 2;
+    padding: 1.5rem;
+    width: 100%;
+    transform: translateY(6px);
+    transition: transform 0.3s;
+  }
+
+  .card-tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+  }
+
+  .tag {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(200,169,110,0.12);
+    border: 1px solid rgba(200,169,110,0.2);
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  .card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .card-studio {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .card-arrow {
+    position: absolute;
+    top: 1.2rem;
+    right: 1.2rem;
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(200,169,110,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translate(-4px, 4px);
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 2;
+    color: var(--accent);
+    font-size: 1rem;
+  }
+
+  .project-card:hover .card-arrow {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+
+  /* FEATURED CARD - SPANS 2 COLUMNS */
+  .project-card.featured {
+    grid-column: span 2;
+    aspect-ratio: 21/9;
+  }
+
+  .project-card.featured .card-title {
+    font-size: 2.2rem;
+  }
+
+  /* PERSONAL PROJECTS */
+  .personal-label {
+    grid-column: 1 / -1;
+    padding: 1.5rem 0 0.5rem;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg);
+  }
+
+  .personal-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(224,92,58,0.2);
+  }
+
+  /* ABOUT SECTION */
+  .about-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6rem;
+    align-items: start;
+  }
+
+  .about-text h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .about-text h3 em {
+    color: var(--accent);
+    font-style: normal;
+    display: block;
+    font-size: 1.2rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+  }
+
+  .about-body {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    color: rgba(232,228,220,0.75);
+    line-height: 1.9;
+    margin-bottom: 2rem;
+  }
+
+  .skills-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+
+  .skill-item {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .skill-item:hover {
+    background: var(--tag);
+    color: var(--accent);
+  }
+
+  .skill-item::before {
+    content: '\u25b8';
+    color: var(--accent);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+  }
+
+  .skill-item:nth-child(even) { border-right: none; }
+  .skill-item:nth-last-child(-n+2) { border-bottom: none; }
+
+  .about-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+
+  .aside-block {
+    padding: 2rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .aside-block:last-child { border-bottom: none; }
+
+  .aside-label {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .aside-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    color: var(--text);
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+  }
+
+  .aside-engines {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .engine-badge {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    background: var(--tag);
+  }
+
+  /* WRITING SECTION */
+  .writing-block {
+    border: 1px solid var(--border);
+    padding: 3rem;
+    position: relative;
+    overflow: hidden;
+    max-width: 800px;
+    transition: border-color 0.3s;
+  }
+
+  .writing-block:hover {
+    border-color: rgba(200,169,110,0.3);
+  }
+
+  .writing-block::before {
+    content: '"';
+    position: absolute;
+    top: -1rem;
+    left: 2rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 8rem;
+    color: rgba(200,169,110,0.06);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .writing-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 1.5rem;
+  }
+
+  .writing-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.03em;
+  }
+
+  .writing-excerpt {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: rgba(232,228,220,0.65);
+    line-height: 2;
+    font-style: italic;
+  }
+
+  /* CTA */
+  .cta-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2.5rem;
+    border-bottom: none;
+    padding: 8rem 5vw;
+  }
+
+  .cta-section h2 {
+    font-size: clamp(3rem, 7vw, 6rem);
+    max-width: 700px;
+  }
+
+  .cta-section h2 span {
+    color: var(--accent);
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    text-decoration: none;
+    transition: all 0.25s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    border: 1px solid var(--accent);
+  }
+
+  .btn-primary:hover {
+    background: transparent;
+    color: var(--accent);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 2rem 5vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  footer a:hover { color: var(--accent); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 0.6; }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.4; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(0.6); }
+  }
+
+  /* INTERSECTION OBSERVER ANIMATIONS */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s, transform 0.7s;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .about-layout { grid-template-columns: 1fr; gap: 3rem; }
+    .project-card.featured { grid-column: span 1; aspect-ratio: 16/10; }
+    .project-card.featured .card-title { font-size: 1.5rem; }
+    .nav-links { display: none; }
+    .header-stats { display: none; }
+    .scroll-cue { display: none; }
+    .projects-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 480px) {
+    section { padding: 4rem 1.2rem; }
+    header { padding: 2rem 1.2rem 3rem; }
+    h1 { font-size: clamp(4rem, 18vw, 8rem); }
+    .cta-buttons { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">Aladdin <em>Vicuna</em></a>
+  <ul class="nav-links">
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#personal">Level Design</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#writing">Writing</a></li>
+    <li><a href="https://aladdinvicuna.wordpress.com/contact/" target="_blank">Resume</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<header>
+  <div class="header-bg"></div>
+  <div class="header-grid"></div>
+
+  <div class="scroll-cue">
+    <div class="scroll-line"></div>
+    <span>Scroll</span>
+  </div>
+
+  <p class="header-eyebrow">Game Level Designer · Quest Designer · Narrative</p>
+  <h1>Aladdin<span>Vicuna</span></h1>
+  <div class="header-sub">
+    <p class="header-desc">Crafting worlds, quests, and environments across MMOs, ARPGs, horror, and racing — from concept to shipped product.</p>
+    <div class="header-stats">
+      <div class="stat">
+        <span class="stat-num">10+</span>
+        <span class="stat-label">Shipped Titles</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">5+</span>
+        <span class="stat-label">Studios</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">3</span>
+        <span class="stat-label">Engines</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- INDUSTRY PROJECTS -->
+<section id="projects">
+  <div class="section-header reveal">
+    <span class="section-num">01</span>
+    <h2>Industry Projects</h2>
+    <div class="section-rule"></div>
+  </div>
+
+  <div class="projects-grid">
+    <!-- Featured -->
+    <a class="project-card featured reveal" href="https://aladdinvicuna.wordpress.com/shib-the-metaverse/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2024/11/shib-title-edited.jpg');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unreal Engine</span>
+          <span class="tag">Social MMO</span>
+          <span class="tag">Metaverse</span>
+        </div>
+        <div class="card-title">Shiba Inu — The Metaverse</div>
+        <div class="card-studio">Shiba Inu · Lead Level Designer</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/diablo-4/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2025/06/diablo-ivtitle.jpeg');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Proprietary Engine</span>
+          <span class="tag">ARPG</span>
+        </div>
+        <div class="card-title">Lost Boys</div>
+        <div class="card-studio">Lost Boys Interactive</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/faster/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2023/09/fasterimg.jpg');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unreal Engine</span>
+          <span class="tag">Racing</span>
+        </div>
+        <div class="card-title">Consortium9</div>
+        <div class="card-studio">Consortium9 · Racing Game</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/space-misfits/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2022/05/logo-1-edited-1.png'); background-color: #111;"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">Sci-Fi MMO</span>
+        </div>
+        <div class="card-title">Space Misfits</div>
+        <div class="card-studio">Jade Stem Studios</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/idle-extraction/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2025/07/chatgpt-image-jul-23-2025-02_04_55-pm.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">Idle RPG</span>
+        </div>
+        <div class="card-title">Idle Extraction</div>
+        <div class="card-studio">Spitfire Games</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/job-application-simulator/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2025/07/chatgpt-image-jul-23-2025-02_02_28-pm.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">Simulation</span>
+        </div>
+        <div class="card-title">Job Application Sim</div>
+        <div class="card-studio">Spitfire Games</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/stones-of-cataria-talewinds/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2022/05/soctitlescreen-edited.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">RPG</span>
+        </div>
+        <div class="card-title">Stones of Cataria</div>
+        <div class="card-studio">Spitfire Games · Talewinds</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/the-red-door/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2021/01/trdnewthumbnail.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">Horror</span>
+        </div>
+        <div class="card-title">The Red Door</div>
+        <div class="card-studio">Spitfire Games</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/quick-draw/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2022/06/quick-draw_logo512.png'); background-color: #111;"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">FPS</span>
+        </div>
+        <div class="card-title">Quick Draw</div>
+        <div class="card-studio">Spitfire Games</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/kingdom-jump/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2021/01/kingdomjumplogo.png'); background-color: #111;"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">Platformer</span>
+        </div>
+        <div class="card-title">Kingdom Jump</div>
+        <div class="card-studio">Pineapple Studios</div>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- PERSONAL / LEVEL DESIGN SECTION -->
+<section id="personal">
+  <div class="section-header reveal">
+    <span class="section-num">02</span>
+    <h2>Level & Quest Design</h2>
+    <div class="section-rule"></div>
+  </div>
+
+  <div class="projects-grid">
+    <a class="project-card featured reveal" href="dragon-age.html" >
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2026/01/screenshot-2025-09-14-214852-1.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unreal Engine</span>
+          <span class="tag">Case Study</span>
+          <span class="tag">Hub World</span>
+        </div>
+        <div class="card-title">Dragon Age — Hub Level Case Study</div>
+        <div class="card-studio">Personal Project · Unreal Engine</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/for-whom-the-bell-tolls/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2024/03/untitled-design-1.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Creation Kit</span>
+          <span class="tag">Quest Design</span>
+        </div>
+        <div class="card-title">For Whom the Bell Tolls</div>
+        <div class="card-studio">Fallout 4 · Quest Design</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/arbol-mountains/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2022/06/arbol-mountains-1.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unreal Engine</span>
+          <span class="tag">Level / Quest</span>
+        </div>
+        <div class="card-title">Arbol Mountains</div>
+        <div class="card-studio">Personal · Unreal Engine</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/island-town/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2022/07/it_shrine-1-edited.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unreal Engine</span>
+          <span class="tag">Environment</span>
+        </div>
+        <div class="card-title">Island Town</div>
+        <div class="card-studio">Personal · Unreal Engine</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/bandido-forest/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2022/06/bandido-forest-1.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">Level / Quest</span>
+        </div>
+        <div class="card-title">Bandido Forest</div>
+        <div class="card-studio">Personal · Unity</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/scraps/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2022/06/copy-of-vicuna_aladdin_flow-edited.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unity</span>
+          <span class="tag">Quest / Level</span>
+        </div>
+        <div class="card-title">Scraps</div>
+        <div class="card-studio">Personal · Unity</div>
+      </div>
+    </a>
+
+    <a class="project-card reveal" href="https://aladdinvicuna.wordpress.com/tps-level-design-process/" target="_blank">
+      <div class="card-img" style="background-image: url('https://aladdinvicuna.wordpress.com/wp-content/uploads/2024/03/tps-level-design-1.png');"></div>
+      <div class="card-overlay"></div>
+      <div class="card-arrow">↗</div>
+      <div class="card-info">
+        <div class="card-tags">
+          <span class="tag">Unreal Engine</span>
+          <span class="tag">TPS</span>
+          <span class="tag">Process</span>
+        </div>
+        <div class="card-title">TPS Level Design Process</div>
+        <div class="card-studio">Personal · Unreal Engine</div>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-header reveal">
+    <span class="section-num">03</span>
+    <h2>About</h2>
+    <div class="section-rule"></div>
+  </div>
+
+  <div class="about-layout">
+    <div class="about-text reveal">
+      <h3><em>The Designer</em>Aladdin Vicuna</h3>
+      <p class="about-body">
+        A professional game level and quest designer with experience shipping titles across multiple genres — from large-scale MMOs and open-world ARPGs to horror, racing, and simulation. Adept at taking a level from whitebox to fully dressed environment, designing quest flow and narrative beats, and collaborating across disciplines.
+      </p>
+      <p class="about-body">
+        Comfortable working in Unreal Engine, Unity, and proprietary pipelines. Has contributed to projects at Shiba Inu, Lost Boys Interactive, Consortium9, Jade Stem Studios, Pineapple Studios, and Spitfire Games.
+      </p>
+      <div class="skills-grid" style="margin-top:2rem;">
+        <div class="skill-item">Level Design</div>
+        <div class="skill-item">Quest Design</div>
+        <div class="skill-item">Narrative Design</div>
+        <div class="skill-item">World Building</div>
+        <div class="skill-item">Scripting / Blueprint</div>
+        <div class="skill-item">Whitebox / Blockout</div>
+        <div class="skill-item">Combat Encounters</div>
+        <div class="skill-item">Pacing & Flow</div>
+      </div>
+    </div>
+
+    <div class="about-aside reveal">
+      <div class="aside-block">
+        <div class="aside-label">Specialisation</div>
+        <div class="aside-value">Level Design<br>Quest Design<br>Narrative</div>
+      </div>
+      <div class="aside-block">
+        <div class="aside-label">Engines</div>
+        <div class="aside-engines">
+          <span class="engine-badge">Unreal Engine</span>
+          <span class="engine-badge">Unity</span>
+          <span class="engine-badge">Creation Kit</span>
+          <span class="engine-badge">Proprietary</span>
+        </div>
+      </div>
+      <div class="aside-block">
+        <div class="aside-label">Genres Shipped</div>
+        <div class="aside-value">MMO · ARPG · Horror<br>Racing · Platformer · RPG<br>FPS · Simulation</div>
+      </div>
+      <div class="aside-block">
+        <div class="aside-label">Studios</div>
+        <div class="aside-value">Shiba Inu · Lost Boys<br>Consortium9 · Jade Stem<br>Pineapple · Spitfire Games</div>
+      </div>
+      <div class="aside-block" style="border-bottom:none;">
+        <div class="aside-label">Availability</div>
+        <div class="aside-value" style="color:var(--accent);">Open to Opportunities</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WRITING -->
+<section id="writing">
+  <div class="section-header reveal">
+    <span class="section-num">04</span>
+    <h2>Writing Samples</h2>
+    <div class="section-rule"></div>
+  </div>
+
+  <div class="writing-block reveal">
+    <div class="writing-label">Sample — Environmental Narrative</div>
+    <div class="writing-title">SITE 8 — Drop Zone Preview</div>
+    <p class="writing-excerpt">
+      As we were yanked off the transport, the bags were pulled from our heads, revealing stark darkness around us. As my eyes tried to adjust to the darkness, I could only make out shadows shifting around me as if they were alive. The forest we found ourselves in was so densely packed that I couldn't catch a glimpse beyond a few trees before it all thickened and obscured any line of sight entirely...
+    </p>
+  </div>
+
+  <div style="margin-top:2rem;" class="reveal">
+    <a href="https://aladdinvicuna.wordpress.com/writing-samples/" target="_blank" class="btn btn-ghost">
+      View All Writing Samples ↗
+    </a>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="reveal">Let's Build<span> Something</span></h2>
+  <p class="reveal" style="color:var(--muted); max-width:420px; text-align:center; font-family:'Playfair Display',serif; font-style:italic; font-size:1.05rem; line-height:1.9;">
+    Open to level design, quest design, and world-building roles across any genre.
+  </p>
+  <div class="cta-buttons reveal">
+    <a href="https://aladdinvicuna.wordpress.com/contact/" target="_blank" class="btn btn-primary">View Resume</a>
+    <a href="https://aladdinvicuna.wordpress.com/design-documents/" target="_blank" class="btn btn-ghost">Design Documents</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span>\u00a9 2026 Aladdin Vicuna</span>
+  <span style="color:var(--border);">— Game Level Designer —</span>
+  <a href="https://aladdinvicuna.wordpress.com" target="_blank">aladdinvicuna.wordpress.com ↗</a>
+</footer>
+
+<script>
+  // Intersection Observer for reveal animations
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, 60 * (Array.from(entry.target.parentElement?.children || []).indexOf(entry.target) % 4));
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
